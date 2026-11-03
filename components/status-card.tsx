@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export type StatusItem = { id: string; name: string; detail: string };
@@ -32,10 +31,10 @@ export function StatusCard({ title, tone, items, empty, max = 8 }: {
         <ul className="mt-2 divide-y divide-black/5">
           {shown.map((item) => (
             <li key={item.id}>
-              <Link href={`/products/${item.id}`} className="flex min-h-11 flex-col justify-center py-1.5">
+              <div className="flex min-h-11 flex-col justify-center py-1.5">
                 <span className="truncate font-medium">{item.name}</span>
                 <span className={cn("text-sm", t.detail)}>{item.detail}</span>
-              </Link>
+              </div>
             </li>
           ))}
           {items.length > max && (

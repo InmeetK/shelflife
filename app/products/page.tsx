@@ -76,7 +76,7 @@ export default async function ProductsPage(props: PageProps<"/products">) {
               const low = p.min_quantity > 0 && p.quantity <= p.min_quantity;
               return (
                 <li key={p.id}>
-                  <Link href={`/products/${p.id}`} className="flex min-h-14 items-center gap-3 px-3 py-2">
+                  <div className="flex min-h-14 items-center gap-3 px-3 py-2">
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium">{p.name}</span>
                       <span className={cn("block text-sm", tone[s])}>
@@ -87,7 +87,7 @@ export default async function ProductsPage(props: PageProps<"/products">) {
                       {p.quantity}
                       {low && <span className="block text-xs font-normal">low</span>}
                     </span>
-                  </Link>
+                  </div>
                 </li>
               );
             })}

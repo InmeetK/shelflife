@@ -1,9 +1,8 @@
-import Link from "next/link";
 import type { Tables } from "@/lib/database";
 import { formatDate, timeAgo } from "@/lib/dates";
 
 type Event = Pick<Tables<"stock_events">,
-  "id" | "type" | "product_id" | "product_name" | "user_id" | "qty_before" | "qty_after" | "expiry_before" | "expiry_after" | "created_at">;
+  "id" | "type" | "product_name" | "user_id" | "qty_before" | "qty_after" | "expiry_before" | "expiry_after" | "created_at">;
 
 function describe(e: Event): string {
   const qty = (n: number | null) => n ?? 0;
@@ -30,21 +29,12 @@ export function RecentChanges({ events, names }: { events: Event[]; names: Map<s
         <ul className="mt-2 divide-y">
           {events.map((e) => {
             const who = (e.user_id && names.get(e.user_id)) || "Someone";
-            const body = (
-              <>
+            return (
+              <li key={e.id} className="flex min-h-11 flex-col justify-center py-1.5">
                 <span className="block truncate font-medium">{e.product_name}</span>
                 <span className="block text-sm text-muted-foreground">
                   {who} {describe(e)} · {timeAgo(e.created_at)}
                 </span>
-              </>
-            );
-            return (
-              <li key={e.id}>
-                {e.product_id ? (
-                  <Link href={`/products/${e.product_id}`} className="flex min-h-11 flex-col justify-center py-1.5">{body}</Link>
-                ) : (
-                  <div className="flex min-h-11 flex-col justify-center py-1.5">{body}</div>
-                )}
               </li>
             );
           })}
