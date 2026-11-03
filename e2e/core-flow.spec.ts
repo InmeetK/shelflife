@@ -99,6 +99,9 @@ test("products: search by name and filter chips", async ({ page }) => {
   await expect(page).toHaveURL("/products");
   const list = page.getByRole("list", { name: "Products" });
 
+  await expect(list).toContainText("Mars Bar 51g");
+  await expect(page.getByRole("button", { name: /^Delete / })).toHaveCount(0); // staff can't delete
+
   await page.getByLabel("Search products").fill("milk");
   await page.getByLabel("Search products").press("Enter");
   await expect(list).toContainText("Cravendale Semi-Skimmed Milk 2L");
@@ -117,6 +120,28 @@ test("products: search by name and filter chips", async ({ page }) => {
   await page.getByLabel("Search products").press("Enter");
   await expect(page.getByText(/No products match/)).toBeVisible();
   await shot(page, "products-empty");
+});
+
+test("manager deletes a product from /products after confirming; logged as a delete event", async ({ page }) => {
+  await loginAs(page, "manager");
+  await page.getByRole("link", { name: "Products" }).click();
+  const list = page.getByRole("list", { name: "Products" });
+
+  await page.getByRole("button", { name: "Delete Mars Bar 51g" }).click();
+  await expect(page.getByText("Delete Mars Bar 51g?")).toBeVisible();
+  await shot(page, "delete-confirm");
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByText("Delete Mars Bar 51g?")).toHaveCount(0);
+  await expect(list).toContainText("Mars Bar 51g");
+
+  await page.getByRole("button", { name: "Delete Mars Bar 51g" }).click();
+  await page.getByRole("button", { name: "Yes, delete" }).click();
+  await expect(list).not.toContainText("Mars Bar 51g");
+
+  await page.getByRole("link", { name: "Dashboard" }).click();
+  const recent = page.locator("section").filter({ has: page.getByRole("heading", { name: /^Recent changes/ }) });
+  await expect(recent.getByRole("listitem").first()).toContainText("Mars Bar 51g");
+  await expect(recent.getByRole("listitem").first()).toContainText("Priya deleted the product");
 });
 
 test("login shows a friendly error for a wrong password", async ({ page }) => {

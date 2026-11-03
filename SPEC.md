@@ -120,7 +120,7 @@ With one date per product, the date always means **"the earliest date still on t
 | `/login` | public | Email + password, plus two buttons: **Use demo manager** and **Use demo staff** |
 | `/` dashboard | member | 4 cards: **Expired** (red), **Expiring within N days** (amber, sorted by date), **Low stock** (qty ≤ min, min > 0), **Recent changes** (manager only, last 20 events with who/what/when). Big **Scan** button fixed at the bottom. Header shows shop name, user's role and sign out |
 | `/scan` | member | Camera viewfinder. Known barcode → product sheet with **Restock** / **Count** buttons. Unknown → new-product form prefilled from OFF. Includes an "Enter barcode manually" fallback |
-| `/products` | member | Search (name/barcode), filter chips (expired / expiring / low), list |
+| `/products` | member | Search (name/barcode), filter chips (expired / expiring / low), list. Manager: delete button per row with inline confirmation (`delete_product`, logs a `delete` event) |
 | `/products/[id]` | member | Details + event history. Manager: edit, set min qty, delete |
 | `/settings` | manager | Shop name, expiry window (days) |
 

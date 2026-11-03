@@ -25,7 +25,7 @@ Owners and staff of small shops with a few hundred lines of beer, cider, mixers,
    - **Expiring within 7 days** (amber)
    - **Low stock** (qty ≤ min)
    - **Recent changes:** who did what, managers only
-5. **Products:** search by name or barcode, and filter chips (expired / expiring / low).
+5. **Products:** search by name or barcode, and filter chips (expired / expiring / low). Managers can delete a product, after a confirmation. The deletion is logged and shows in Recent changes.
 
 ## The expiry rule (the main trade-off)
 Each product has **one quantity and one date**, and the date always means *"the earliest date still on the shelf"*.
@@ -39,7 +39,7 @@ Each product has **one quantity and one date**, and the date always means *"the 
 - **Every stock write is a Postgres function** (`security definer`). It checks the caller's shop and role, applies the change, and writes one `stock_events` audit row **in the same transaction**. Role rules and logging live in one place the client can't skip.
 - **Postgres functions:**
   - `create_product`, `restock`, `set_count` for staff and managers.
-  - `update_product`, `delete_product`, `update_shop` for managers only. They're tested, but they have no UI yet (see scope).
+  - `update_product`, `delete_product`, `update_shop` for managers only. Delete is on `/products`; the other two have no UI yet (see scope).
 - **RLS:** members can only `select` their own shop's rows. No table accepts client inserts, updates or deletes.
 - **Barcode scanning:** `barcode-detector` ponyfill (ZXing WASM). Native `BarcodeDetector` is off in iOS Safari, so it can't be relied on.
 - **Open Food Facts:** the v3 API, called server-side through `/api/lookup/[barcode]`. It's signed-in only, has a 3s timeout and a 1-day cache, and degrades to an empty form on 404, 429 or 503.
@@ -56,7 +56,7 @@ Each product has **one quantity and one date**, and the date always means *"the 
 ## Scope decisions (60-minute build)
 **Cut**, from the spec's cut list, in order:
 - **`/settings`**: the expiry window stays at 7 days. The tested `update_shop` RPC is ready for it.
-- **Product detail page:** event history and the manager's edit, minimum quantity and delete. The `update_product` and `delete_product` RPCs exist and are tested; there's no UI yet. Managers see history in Recent changes.
+- **Product detail page:** event history and the manager's edit and minimum quantity. The `update_product` RPC exists and is tested; there's no UI yet. Delete moved to the products list. Managers see history in Recent changes.
 
 **Out of scope for v1:**
 - Self-serve signup, shop onboarding and invites.

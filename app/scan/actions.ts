@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireMember } from "@/lib/auth";
 import type { Tables } from "@/lib/database";
+import { friendlyRpcError as friendly } from "@/lib/errors";
 
 export type Product = Tables<"products">;
 type Result = { product: Product; error?: undefined } | { error: string; product?: undefined };
@@ -11,10 +12,6 @@ const BARCODE = /^\d{8,14}$/;
 const isDate = (v: unknown): v is string | null => v === null || (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v));
 const isQty = (v: unknown, min: number): v is number => Number.isInteger(v) && (v as number) >= min && (v as number) <= 100_000;
 
-// RPCs raise friendly messages with these codes; anything else stays generic.
-function friendly(e: { code?: string; message: string }): string {
-  return ["22023", "23505", "P0002", "42501"].includes(e.code ?? "") ? e.message : "Something went wrong. Please try again.";
-}
 
 function done(data: Product | null, error: { code?: string; message: string } | null): Result {
   if (error || !data) return { error: error ? friendly(error) : "Something went wrong. Please try again." };

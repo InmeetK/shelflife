@@ -7,6 +7,7 @@ import { requireMember } from "@/lib/auth";
 import { londonToday } from "@/lib/dates";
 import { expiryLabel, expiryStatus } from "@/lib/expiry";
 import { cn } from "@/lib/utils";
+import { DeleteProduct } from "./delete-product";
 
 export const metadata: Metadata = { title: "Products · ShelfLife" };
 
@@ -21,6 +22,7 @@ export default async function ProductsPage(props: PageProps<"/products">) {
   const filter = typeof sp.filter === "string" && sp.filter in FILTERS ? (sp.filter as Filter) : null;
   const today = londonToday();
   const window = me.shop.windowDays;
+  const isManager = me.role === "manager";
 
   let query = me.supabase.from("products").select("id, name, brand, barcode, quantity, min_quantity, expiry_date").order("name");
   if (/^\d{8,14}$/.test(q)) query = query.eq("barcode", q);
@@ -75,8 +77,8 @@ export default async function ProductsPage(props: PageProps<"/products">) {
               const s = status(p);
               const low = p.min_quantity > 0 && p.quantity <= p.min_quantity;
               return (
-                <li key={p.id}>
-                  <div className="flex min-h-14 items-center gap-3 px-3 py-2">
+                <li key={p.id} className="relative">
+                  <div className={cn("flex min-h-14 items-center gap-3 py-2 pl-3", isManager ? "pr-1" : "pr-3")}>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium">{p.name}</span>
                       <span className={cn("block text-sm", tone[s])}>
@@ -87,6 +89,7 @@ export default async function ProductsPage(props: PageProps<"/products">) {
                       {p.quantity}
                       {low && <span className="block text-xs font-normal">low</span>}
                     </span>
+                    {isManager && <DeleteProduct id={p.id} name={p.name} />}
                   </div>
                 </li>
               );
