@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, daysBetween, formatDate, londonToday } from "@/lib/dates";
+import { addDays, daysBetween, formatDate, londonToday, timeAgo } from "@/lib/dates";
 
 describe("londonToday", () => {
   it("is already tomorrow at 23:30 UTC during BST", () => {
@@ -47,5 +47,15 @@ describe("formatDate", () => {
   it("formats UK-style without timezone drift", () => {
     expect(formatDate("2027-03-03")).toBe("3 Mar 2027");
     expect(formatDate("2026-12-31")).toBe("31 Dec 2026");
+  });
+});
+
+describe("timeAgo", () => {
+  const now = new Date("2026-11-03T12:00:00Z");
+  it("buckets into just now / minutes / hours / days", () => {
+    expect(timeAgo("2026-11-03T11:59:30Z", now)).toBe("just now");
+    expect(timeAgo("2026-11-03T11:15:00Z", now)).toBe("45m ago");
+    expect(timeAgo("2026-11-03T03:00:00Z", now)).toBe("9h ago");
+    expect(timeAgo("2026-10-31T12:00:00Z", now)).toBe("3d ago");
   });
 });

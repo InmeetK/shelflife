@@ -70,6 +70,47 @@ test("3. unknown barcode → new-product form → save → appears in /products"
   await shot(page, "products");
 });
 
+// /settings was cut (SPEC §9 cut list), so step 4 checks the manager-only card instead.
+test("4. staff don't see Recent changes; demo manager does", async ({ page }) => {
+  await loginAs(page, "staff");
+  await expect(page.getByRole("heading", { name: /^Expired/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Recent changes/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page).toHaveURL(/\/login$/);
+
+  await loginAs(page, "manager");
+  const recent = page.locator("section").filter({ has: page.getByRole("heading", { name: /^Recent changes/ }) });
+  await expect(recent).toBeVisible();
+  await expect(recent).toContainText("Sam"); // seeded staff events, names via memberships
+  await shot(page, "dashboard-manager");
+});
+
+test("products: search by name and filter chips", async ({ page }) => {
+  await loginAs(page, "staff");
+  await page.getByRole("link", { name: "Products" }).click();
+  await expect(page).toHaveURL("/products");
+  const list = page.getByRole("list", { name: "Products" });
+
+  await page.getByLabel("Search products").fill("milk");
+  await page.getByLabel("Search products").press("Enter");
+  await expect(list).toContainText("Cravendale Semi-Skimmed Milk 2L");
+  await expect(list).not.toContainText("Corona Extra 330ml");
+
+  await page.getByRole("link", { name: "Clear" }).click();
+  await expect(page).toHaveURL("/products");
+  await expect(page.getByLabel("Search products")).toHaveValue("");
+  await page.getByRole("link", { name: "Low stock" }).click();
+  await expect(page).toHaveURL("/products?filter=low");
+  await expect(list).toContainText("Red Bull Energy Drink 250ml"); // not Corona: step 2 restocks it
+  await expect(list).not.toContainText("Asahi Super Dry 330ml");
+  await shot(page, "products-low");
+
+  await page.getByLabel("Search products").fill("zzz-nothing");
+  await page.getByLabel("Search products").press("Enter");
+  await expect(page.getByText(/No products match/)).toBeVisible();
+  await shot(page, "products-empty");
+});
+
 test("login shows a friendly error for a wrong password", async ({ page }) => {
   await page.goto("/login");
   await page.getByLabel("Email").fill("staff@shelflife.demo");

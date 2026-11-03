@@ -84,8 +84,9 @@ export function Scanner({ onDetected, paused }: { onDetected: (code: string) => 
   return (
     <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-black">
       <video ref={videoRef} playsInline muted className="size-full object-cover" />
-      <div className={cn("pointer-events-none absolute inset-x-8 top-1/2 h-24 -translate-y-1/2 rounded-lg border-2 transition-colors",
-        flash ? "border-green-400 bg-green-400/30" : "border-white/70")} />
+      {/* Square target: codes decode in either orientation. The outer shadow shades everything else. */}
+      <div className={cn("pointer-events-none absolute top-1/2 left-1/2 aspect-square h-[72%] -translate-x-1/2 -translate-y-1/2 rounded-xl border-2 shadow-[0_0_0_100vmax_rgba(0,0,0,0.45)] transition-colors",
+        flash ? "border-green-400 bg-green-400/30" : "border-white/80")} />
       <p className="absolute inset-x-0 bottom-2 text-center text-sm text-white/90">
         {status === "starting" ? "Starting camera…" : "Point at a barcode"}
       </p>
