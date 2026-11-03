@@ -21,6 +21,14 @@ test("1. demo staff login → dashboard shows Expired / Expiring / Low stock", a
     await expect(page.getByRole("heading", { name: card })).toBeVisible();
   }
   await shot(page, "dashboard-staff");
+
+  // Cards show 3 items, then expand. Seed has 4 expired products.
+  const expired = page.locator("section").filter({ has: page.getByRole("heading", { name: /^Expired/ }) });
+  await expect(expired.getByRole("listitem")).toHaveCount(3);
+  await expired.getByRole("button", { name: "Show all (4)" }).click();
+  await expect(expired.getByRole("listitem")).toHaveCount(4);
+  await expired.getByRole("button", { name: "Show less" }).click();
+  await expect(expired.getByRole("listitem")).toHaveCount(3);
 });
 
 const lowStockCard = (page: Page) =>
