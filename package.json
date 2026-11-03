@@ -7,11 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "check": "next typegen && tsc --noEmit && eslint . && vitest run --passWithNoTests",
+    "check": "next typegen && tsc --noEmit && eslint . && vitest run",
     "e2e": "playwright test",
     "seed": "tsx scripts/seed.ts",
-    "db:push": "supabase db push",
-    "db:types": "supabase gen types typescript --linked > lib/database.types.ts"
+    "db:push": "supabase db push --remote",
+    "db:types": "supabase gen types typescript --remote > lib/database.types.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

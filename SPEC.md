@@ -81,8 +81,8 @@ products
   unique (shop_id, barcode)
 
 stock_events                      -- append-only audit log
-  id bigserial pk, shop_id, product_id, user_id,
-  type text check in ('create','restock','count','edit'),
+  id bigserial pk, shop_id, product_id (on delete set null), product_name (snapshot), user_id,
+  type text check in ('create','restock','count','edit','delete'),
   qty_before int, qty_after int,
   expiry_before date, expiry_after date, created_at
 ```
@@ -92,9 +92,9 @@ Indexes: `products(shop_id, expiry_date)`, `products(shop_id, barcode)` (from th
 ### RLS
 - Helpers: `my_shop_id()` and `is_manager()` (SQL, `stable`, read from `memberships` where `user_id = auth.uid()`).
 - `select` on all shop tables: `shop_id = my_shop_id()`. Members can read `memberships` rows for their own shop (for display names in the activity feed).
-- `products`: no direct insert or update for anyone, because writes go through RPCs. Only managers can `delete`.
+- `products`: no direct insert, update or delete for anyone, because writes go through RPCs. Only managers can delete, via `delete_product`.
 - `stock_events`: select only. Inserts happen inside RPCs.
-- `shops`: update by manager only (settings). `memberships`: no client writes. Rows are created by the seed script.
+- `shops`: update by manager only (settings), via `update_shop`. `memberships`: no client writes. Rows are created by the seed script.
 
 ### RPC contracts
 | Function | Who | Behaviour |
@@ -103,6 +103,10 @@ Indexes: `products(shop_id, expiry_date)`, `products(shop_id, barcode)` (from th
 | `restock(product_id, add_qty, expiry_date)` | staff+ | Rejects `add_qty ≤ 0`. `qty += add_qty`. Expiry becomes `incoming` if the old qty was 0 or the old expiry was null, otherwise `least(current, incoming)`. Logs a `restock` event |
 | `set_count(product_id, qty, earliest_expiry)` | staff+ | Rejects `qty < 0`. Sets the absolute qty and expiry. If qty = 0, expiry is set to null. Logs a `count` event |
 | `update_product(product_id, name, brand, min_quantity)` | manager | Edits details and logs an `edit` event |
+| `delete_product(product_id)` | manager | Logs a `delete` event (keeps `product_name`), then deletes; history rows get `product_id = null` |
+| `update_shop(name, expiry_window_days)` | manager | Settings page. Window 1–60 days. No stock event |
+
+SQL parameters are prefixed `p_` (e.g. `p_product_id`) to avoid clashing with column names.
 
 ## 5. The expiry rule (worth explaining in the README)
 With one date per product, the date always means **"the earliest date still on the shelf."**
@@ -120,7 +124,7 @@ With one date per product, the date always means **"the earliest date still on t
 | `/products/[id]` | member | Details + event history. Manager: edit, set min qty, delete |
 | `/settings` | manager | Shop name, expiry window (days) |
 
-Route guards (`proxy.ts`): no session goes to `/login`. A signed-in user with no membership sees a "This account isn't linked to a shop" message with a sign-out button (it shouldn't happen with signups disabled, but it shouldn't crash either). Staff opening `/settings` are redirected to `/`.
+Route guards: `proxy.ts` sends no-session requests to `/login`; membership and role checks run in `requireMember()` (server pages/layouts) so the proxy doesn't query the DB on every request. A signed-in user with no membership sees a "This account isn't linked to a shop" message with a sign-out button (it shouldn't happen with signups disabled, but it shouldn't crash either). Staff opening `/settings` are redirected to `/`.
 
 "Today" is calculated in `Europe/London` time so dates don't flip at 11pm UTC.
 

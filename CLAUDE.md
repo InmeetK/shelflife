@@ -21,8 +21,8 @@ This is a timed 60-minute build. Work in the slices from SPEC.md §9 and protect
 | `npm run check` | `next typegen` + `tsc --noEmit` + `eslint .` + `vitest run` (unit + DB tests). Next 16 removed `next lint` |
 | `npm run e2e` | Playwright against `BASE_URL` (default `http://localhost:3000`) |
 | `npm run seed` | Re-runnable seed. Resets both demo shops |
-| `npm run db:push` | `supabase db push` |
-| `npm run db:types` | `supabase gen types typescript --linked > lib/database.types.ts` |
+| `npm run db:push` | `supabase db push --remote` (CLI 3 targets the local stack by default) |
+| `npm run db:types` | `supabase gen types typescript --remote > lib/database.types.ts` |
 
 Set these scripts up in the first slice.
 
@@ -81,7 +81,7 @@ If the same failure happens twice, stop and explain your hypothesis instead of t
 - Every table has RLS enabled in the same migration that creates it.
 - Every `security definer` RPC: `set search_path = public`, checks `my_shop_id()` / `is_manager()` first, `raise exception` with a clear message on failure. `revoke execute ... from public, anon`; `grant execute ... to authenticated`.
 - The helpers `my_shop_id()` / `is_manager()` are `stable security definer set search_path = public` (otherwise the memberships policy recurses). They're exempt from the "check first" rule.
-- Regenerate types after every schema change.
+- Regenerate types after every schema change. Import `Database` from `lib/database.ts` (widens RPC args to nullable), not from the generated file.
 
 ## Guardrails
 - Git: committing and pushing to `origin/main` after each slice is authorised (it deploys to Vercel).
