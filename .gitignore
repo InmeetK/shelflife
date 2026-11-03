@@ -24,3 +24,7 @@ blob-report/
 # misc
 .DS_Store
 npm-debug.log*
+
+# extra (from create-next-app template)
+*.pem
+coverage/

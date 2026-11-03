@@ -11,12 +11,14 @@ This is a timed 60-minute build. Work in the slices from SPEC.md §9 and protect
 - Scanning: `barcode-detector/ponyfill` + `getUserMedia`. Don't use native `BarcodeDetector` or `@zxing/*`.
 - shadcn: use the generated `components/ui` files. Check the imports there; don't assume Radix.
 - Open Food Facts: v3 endpoint. `curl` a real barcode before writing the parser. See SPEC.md §7 for User-Agent, caching and rate limits.
+- `next.config.ts`: `cacheComponents` is **off** (the scaffold default was on). Cookie-authenticated pages render dynamically without Suspense boilerplate.
+- `AGENTS.md` is managed by `next dev` (upserts a block between its markers). Commit it; don't hand-edit inside the markers. It never touches this file.
 
 ## Commands
 | Command | Does |
 |---|---|
 | `npm run dev` | Local dev server |
-| `npm run check` | `tsc --noEmit` + `next lint` + `vitest run` (unit + DB tests) |
+| `npm run check` | `next typegen` + `tsc --noEmit` + `eslint .` + `vitest run` (unit + DB tests). Next 16 removed `next lint` |
 | `npm run e2e` | Playwright against `BASE_URL` (default `http://localhost:3000`) |
 | `npm run seed` | Re-runnable seed. Resets both demo shops |
 | `npm run db:push` | `supabase db push` |
@@ -36,10 +38,10 @@ Write the failing test **first**, show it failing, then implement:
 
 Don't write TDD-style tests for UI components. Playwright covers the UI.
 
-DB tests mutate the linked project. Run `npm run seed` after them so the demo is clean.
+DB tests mutate the linked project. The `db` Vitest project's globalSetup (`tests/db/global-setup.ts`) reseeds before and after, so the demo is left clean. Never run `check` and `e2e` at the same time.
 
 ## Verifying the frontend (Playwright)
-Use `@playwright/test` (Chromium is installed already; don't reinstall it) with the **iPhone 13 device profile (390×844)** by default.
+Use `@playwright/test` (pinned to 1.64.1 to match the installed chromium-1248; don't reinstall browsers) with the **iPhone 13 device profile (390×844)** by default. That profile defaults to WebKit, so override with `browserName: 'chromium'`. `workers: 1`, and a globalSetup reseeds so the smoke spec is re-runnable (the seed runs locally, even when `BASE_URL` is Vercel). The unknown barcode in step 3 must be one that isn't in OFF.
 - **Smoke spec** (`e2e/core-flow.spec.ts`), the one that must stay green:
   1. Demo staff login → dashboard shows the Expired / Expiring / Low stock cards
   2. Manual barcode entry of a seeded product → Restock +6 → dashboard reflects it
@@ -69,6 +71,7 @@ If the same failure happens twice, stop and explain your hypothesis instead of t
 ## Code rules
 - Keep it simple. No abstractions for one call site, no state libraries, no ORM (supabase-js + generated types).
 - Server Components read data. Server Actions call RPCs. Clients never write to tables directly.
+- Route guards: `proxy.ts` only refreshes the session and sends no-session requests to `/login`. Membership and role checks live in `requireMember()` (`lib/auth.ts`), called from server pages and layouts.
 - Validate inputs at the boundary (Server Action / route handler) and return friendly errors, not stack traces.
 - Dates: store `date` (no time). Compute "today" in `Europe/London` in one helper and use it everywhere.
 - Mobile first: one column, bottom-fixed primary action, big inputs, `inputMode="numeric"` for quantities and barcodes.
@@ -76,10 +79,13 @@ If the same failure happens twice, stop and explain your hypothesis instead of t
 ## Database rules
 - Migrations live in `supabase/migrations/`. **Never edit a migration that has been pushed.** Add a new one.
 - Every table has RLS enabled in the same migration that creates it.
-- Every `security definer` function: `set search_path = public`, checks `my_shop_id()` / `is_manager()` first, `raise exception` with a clear message on failure.
+- Every `security definer` RPC: `set search_path = public`, checks `my_shop_id()` / `is_manager()` first, `raise exception` with a clear message on failure. `revoke execute ... from public, anon`; `grant execute ... to authenticated`.
+- The helpers `my_shop_id()` / `is_manager()` are `stable security definer set search_path = public` (otherwise the memberships policy recurses). They're exempt from the "check first" rule.
 - Regenerate types after every schema change.
 
 ## Guardrails
+- Git: committing and pushing to `origin/main` after each slice is authorised (it deploys to Vercel).
+- Scaffolding tools that write into the repo (create-next-app etc.) run in a scratch dir first, then `rsync --ignore-existing`. Never overwrite CLAUDE.md, SPEC.md or .gitignore.
 - **No new dependencies without asking.** Pre-approved: `@supabase/supabase-js`, `@supabase/ssr`, `barcode-detector`, `vitest`, `@playwright/test`, `tsx`, and shadcn components.
 - Never print, log or commit secrets. `.env*` stays gitignored. Check before the first commit.
 - Never weaken, skip or delete a test to make it pass without telling me why.
