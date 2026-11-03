@@ -1,8 +1,47 @@
-export default function Home() {
+import { AppHeader } from "@/components/app-header";
+import { ScanBar } from "@/components/scan-bar";
+import { StatusCard } from "@/components/status-card";
+import { requireMember } from "@/lib/auth";
+import { londonToday } from "@/lib/dates";
+import { expiryLabel, expiryStatus } from "@/lib/expiry";
+
+export default async function DashboardPage() {
+  const me = await requireMember();
+  const today = londonToday();
+  const window = me.shop.windowDays;
+
+  const { data: products, error } = await me.supabase
+    .from("products")
+    .select("id, name, quantity, min_quantity, expiry_date")
+    .order("expiry_date", { ascending: true, nullsFirst: false })
+    .order("name");
+
+  // Expiry cards only count stock that's actually on the shelf.
+  const onShelf = (products ?? []).filter((p) => p.quantity > 0);
+  const byStatus = (s: "expired" | "expiring") =>
+    onShelf
+      .filter((p) => expiryStatus(p.expiry_date, today, window) === s)
+      .map((p) => ({ id: p.id, name: p.name, detail: `${expiryLabel(p.expiry_date, today)} · ${p.quantity} on shelf` }));
+  const low = (products ?? [])
+    .filter((p) => p.min_quantity > 0 && p.quantity <= p.min_quantity)
+    .sort((a, b) => a.quantity - b.quantity)
+    .map((p) => ({ id: p.id, name: p.name, detail: `${p.quantity} left · min ${p.min_quantity}` }));
+
   return (
-    <main className="flex flex-1 flex-col items-center justify-center p-6">
-      <h1 className="text-3xl font-semibold">ShelfLife</h1>
-      <p className="text-muted-foreground mt-2">Expiry &amp; stock tracker</p>
-    </main>
+    <>
+      <AppHeader shopName={me.shop.name} role={me.role} displayName={me.displayName} />
+      <main className="mx-auto max-w-md space-y-4 px-4 pt-4 pb-28">
+        {error && (
+          <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            Couldn&apos;t load stock. Pull to refresh or try again.
+          </p>
+        )}
+        <StatusCard title="Expired" tone="red" items={byStatus("expired")} empty="Nothing past its date. 🎉" />
+        <StatusCard title={`Expiring within ${window} days`} tone="amber" items={byStatus("expiring")}
+          empty={`Nothing expires in the next ${window} days.`} />
+        <StatusCard title="Low stock" tone="neutral" items={low} empty="Nothing below its minimum." />
+      </main>
+      <ScanBar />
+    </>
   );
 }

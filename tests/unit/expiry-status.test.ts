@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expiryStatus } from "@/lib/expiry";
+import { expiryLabel, expiryStatus } from "@/lib/expiry";
 
 const today = "2026-11-03";
 
@@ -25,5 +25,16 @@ describe("expiryStatus", () => {
   it("respects the shop's window size", () => {
     expect(expiryStatus("2026-11-11", today, 14)).toBe("expiring");
     expect(expiryStatus("2026-11-04", today, 0)).toBe("ok");
+  });
+});
+
+describe("expiryLabel", () => {
+  it("reads naturally", () => {
+    expect(expiryLabel("2026-11-01", today)).toBe("Expired 2 days ago");
+    expect(expiryLabel("2026-11-02", today)).toBe("Expired yesterday");
+    expect(expiryLabel("2026-11-03", today)).toBe("Expires today");
+    expect(expiryLabel("2026-11-04", today)).toBe("Expires tomorrow");
+    expect(expiryLabel("2026-11-08", today)).toBe("Expires in 5 days");
+    expect(expiryLabel(null, today)).toBe("No date");
   });
 });

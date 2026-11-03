@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, londonToday } from "@/lib/dates";
+import { addDays, daysBetween, londonToday } from "@/lib/dates";
 
 describe("londonToday", () => {
   it("is already tomorrow at 23:30 UTC during BST", () => {
@@ -31,5 +31,14 @@ describe("addDays", () => {
   it("is unaffected by the DST change", () => {
     expect(addDays("2026-03-28", 2)).toBe("2026-03-30");
     expect(addDays("2026-10-24", 2)).toBe("2026-10-26");
+  });
+});
+
+describe("daysBetween", () => {
+  it("counts whole days, negative when in the past, across DST", () => {
+    expect(daysBetween("2026-11-03", "2026-11-03")).toBe(0);
+    expect(daysBetween("2026-11-03", "2026-11-10")).toBe(7);
+    expect(daysBetween("2026-11-03", "2026-11-01")).toBe(-2);
+    expect(daysBetween("2026-03-28", "2026-03-30")).toBe(2);
   });
 });

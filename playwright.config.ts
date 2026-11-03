@@ -4,6 +4,7 @@ const baseURL = process.env.BASE_URL ?? "http://localhost:3000";
 
 export default defineConfig({
   testDir: "e2e",
+  globalSetup: "./e2e/global-setup.ts",
   // Tests mutate the shared demo DB: run serially, reseed first.
   workers: 1,
   fullyParallel: false,
