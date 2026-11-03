@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, daysBetween, londonToday } from "@/lib/dates";
+import { addDays, daysBetween, formatDate, londonToday } from "@/lib/dates";
 
 describe("londonToday", () => {
   it("is already tomorrow at 23:30 UTC during BST", () => {
@@ -40,5 +40,12 @@ describe("daysBetween", () => {
     expect(daysBetween("2026-11-03", "2026-11-10")).toBe(7);
     expect(daysBetween("2026-11-03", "2026-11-01")).toBe(-2);
     expect(daysBetween("2026-03-28", "2026-03-30")).toBe(2);
+  });
+});
+
+describe("formatDate", () => {
+  it("formats UK-style without timezone drift", () => {
+    expect(formatDate("2027-03-03")).toBe("3 Mar 2027");
+    expect(formatDate("2026-12-31")).toBe("31 Dec 2026");
   });
 });
